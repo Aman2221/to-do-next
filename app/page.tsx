@@ -1,22 +1,61 @@
 "use client";
+import { TodoContext } from "@/context/todo";
+import { todo_interface } from "@/interfaces/todo";
 import Image from "next/image";
-import { useState } from "react";
+import { Key, useContext, useState } from "react";
 
 export default function Home() {
   const [text, setText] = useState("");
+  const [selected, setSelected] = useState({
+    id: 0,
+    text: "",
+  });
+  const { todoItems, setTodoItems }: any = useContext(TodoContext);
   const [isEditing, setIsEditing] = useState(false);
-
+  const [isAdd, setIsAdd] = useState(false);
   const handleChange = (e: React.FormEvent<HTMLInputElement>) => {
     const target: any = e?.target;
     setText(target.value);
   };
 
   const handleEdit = (id: number, text: string) => {
+    setSelected({
+      id,
+      text,
+    });
     setIsEditing(true);
     setText(text);
+    setIsAdd(true);
   };
 
-  const handleDelete = (id: number) => {};
+  const handleDelete = (id: number) => {
+    const item_index = todoItems.findIndex((a: todo_interface) => a.id === id);
+    todoItems.splice(item_index, 1);
+    setTodoItems([...todoItems]);
+  };
+
+  const handleSave = () => {
+    if (isEditing && selected.text !== text) {
+      const item_index = todoItems.findIndex(
+        (a: todo_interface) => a.id === selected.id
+      );
+      const temp = [...todoItems];
+      const item = temp.splice(item_index, 1);
+      item[0].text = text;
+
+      setTodoItems([...todoItems]);
+    } else if (selected.text !== text) {
+      setTodoItems(
+        todoItems
+          ? [...todoItems, { id: todoItems.length, text: text }]
+          : [{ id: 0, text: text }]
+      );
+    }
+
+    setIsAdd(false);
+    setIsEditing(false);
+    setText("");
+  };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-start p-24 gap-20">
@@ -41,70 +80,77 @@ export default function Home() {
         <div className="flex items-center justify-between">
           <span className="uppercase font-extrabold text-2xl">to do list</span>
           <button
+            onClick={() => setIsAdd(true)}
             data-tooltip-target="tooltip-default"
             type="button"
             className="text-white uppercase bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
           >
             Add
           </button>
-          <div
-            id="tooltip-default"
-            role="tooltip"
-            className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700"
-          >
-            Tooltip content
-            <div className="tooltip-arrow" data-popper-arrow></div>
-          </div>
         </div>
         <div className="mt-10">
-          <ol>
-            <li className="flex items-center justify-between mt-5">
-              <span className="text-lg text-slate-100">Aman</span>
-              <div className="option flex items-center gap-3">
-                <i
-                  onClick={() => handleEdit(1, "Aman")}
-                  className="bx bx-edit-alt cursor-pointer"
-                ></i>
-                <i
-                  onClick={() => handleDelete(1)}
-                  className="bx bx-trash cursor-pointer"
-                ></i>
-              </div>
-            </li>
-            <li className="flex items-center justify-between mt-5">
-              <span className="text-lg text-slate-100">Aman</span>
-              <div className="option flex items-center gap-3">
-                <i className="bx bx-edit-alt"></i>
-                <i className="bx bx-trash"></i>
-              </div>
-            </li>
-          </ol>
+          {todoItems && todoItems.length > 0 && (
+            <ol>
+              {todoItems.map((item: todo_interface) => {
+                return (
+                  <li
+                    key={item.id as Key}
+                    className="flex items-center justify-between mt-5"
+                  >
+                    <span className="text-lg text-slate-100">{item.text}</span>
+                    <div className="option flex items-center gap-3">
+                      <i
+                        onClick={() => handleEdit(item.id, item.text)}
+                        className="bx bx-edit-alt cursor-pointer"
+                      ></i>
+                      <i
+                        onClick={() => handleDelete(item.id)}
+                        className="bx bx-trash cursor-pointer"
+                      ></i>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
         </div>
-        <form>
-          <div className="mt-5 mb-6 md:grid-cols-2 flex justify-center flex-col gap-5">
+        <div className="mt-5 mb-6 md:grid-cols-2 flex justify-center flex-col gap-5">
+          {isAdd ? (
             <div className="w-full">
               <input
                 onChange={handleChange}
                 type="text"
-                id="first_name"
+                id="text"
                 value={text}
                 className="bg-gray-50  border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                 placeholder="Enter text"
                 required
               />
             </div>
-            {isEditing && (
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
-                >
-                  Save
-                </button>
-              </div>
-            )}
-          </div>
-        </form>
+          ) : todoItems.length == 0 ? (
+            <div className="text-center">
+              <span className="font-bold text-lg">
+                Your todo list is empty click on add button to create a new task
+              </span>
+            </div>
+          ) : (
+            <></>
+          )}
+
+          {isEditing || isAdd ? (
+            <div className="flex justify-end">
+              <button
+                onClick={handleSave}
+                type="button"
+                className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
+              >
+                Save
+              </button>
+            </div>
+          ) : (
+            <></>
+          )}
+        </div>
       </div>
     </main>
   );
