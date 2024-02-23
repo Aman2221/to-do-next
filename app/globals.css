@@ -31,3 +31,7 @@ body {
     text-wrap: balance;
   }
 }
+
+.to-do-div {
+  width: 350px;
+}
